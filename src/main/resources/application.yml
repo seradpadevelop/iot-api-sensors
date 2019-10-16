@@ -1,0 +1,117 @@
+# profile common
+enable-azure-ad: true
+server:
+  servlet:
+    context-path: /api
+spring:
+  datasource:
+    driver_class: com.ibm.db2.jcc.DB2Driver
+    driverType: 4
+    hikari:
+      data-source-properties:
+        clientProgramName: ${HOSTNAME:iot-api-sensors}
+  jpa:
+    hibernate:
+      connection.pool_size: 10
+      ddl-auto: update
+      dialect: org.hibernate.dialect.DB2Dialect
+      naming-strategy: org.hibernate.cfg.ImprovedNamingStrategy
+      open-in-view: false
+      show_sql: true
+    properties:
+      hibernate:
+        generate_statistics: false
+        jdbc:
+          time_zone = UTC
+    show-sql: false
+  rabbitmq:
+    exchange: rtmt.domainevents
+    routingKey: sensor.metadata.changed
+    ssl:
+      enabled: true
+      algorithm: TLSv1.2
+info:
+  app:
+    name: Opera IoT Sensors Service
+    description: IoT REST Interface for Opera IoT Sensors   
+    version: 0.1
+---
+# profile ibmcloud-dev
+logging:
+  level:
+    org.hibernate.stat: DEBUG
+    com.opera.iotapisensors.iotsensor.controller.IotSensorDataController: DEBUG
+spring:
+  profiles: ibmcloud-dev
+  datasource:
+    password: enter_password
+    url: jdbc:db2://dashdb-enterprise-eu-fra02-43.services.eu-de.bluemix.net:50000/BLUDB:currentSchema=BLUADMIN;
+    username: bluadmin
+  jpa:
+    properties.hibernate.generate_statistics: false
+    show-sql: true
+  security:
+    oauth2:
+      client:
+        provider:
+          azuread:
+            issuer-uri: https://login.microsoftonline.com/28de3153-71b5-4125-be0d-88885d2e44fa/v2.0
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://login.microsoftonline.com/28de3153-71b5-4125-be0d-88885d2e44fa/discovery/v2.0/keys
+  rabbitmq:
+    host: 4e703cf8-b1fe-4165-8afa-a2ff80810686.bc28ac43cf10402584b5f01db462d330.databases.appdomain.cloud
+    port: 30739
+    username: ibm_cloud_3c073c38_39e9_45c8_a68d_ce247f2e2764
+rtmt:
+  watsoniot:
+    apikey: a-jbba0g-sxxvwzy6mq
+    token: enter_token
+    server: internetofthings.ibmcloud.com/api/v0002/
+    clientid: jbba0g
+connectionTimeout: 1000000
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - health
+        - info
+---
+# profile ibmcloud-poc
+spring:
+  profiles: ibmcloud-poc
+  datasource:
+    password: enter_password
+    url: jdbc:db2://dashdb-enterprise-eu-fra02-44.services.eu-de.bluemix.net:50000/BLUDB:currentSchema=BLUADMIN;
+    username: bluadmin
+  jpa:
+    properties.hibernate.generate_statistics: false
+    show-sql: false
+  security:
+    oauth2:
+      client:
+        provider:
+          azuread:
+            issuer-uri: https://login.microsoftonline.com/ad4cb6df-6b71-4c1d-b540-bd56be265142/v2.0
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://login.microsoftonline.com/ad4cb6df-6b71-4c1d-b540-bd56be265142/discovery/v2.0/keys
+  rabbitmq:
+    host: 4b474196-71d5-4362-9167-80de6d68d674.b9366f7fcf0b43acb51a70da08153291.databases.appdomain.cloud
+    port: 30442
+    username: ibm_cloud_aad5b53e_0864_45b7_9b2f_446f538241ee
+rtmt:
+  watsoniot:
+    apikey: a-e2cmmk-etgm0mvnmx
+    token: enter_token
+    server: internetofthings.ibmcloud.com/api/v0002/
+    clientid: e2cmmk
+connectionTimeout: 1000000
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - health
+        

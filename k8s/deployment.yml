@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iot-api-sensors-deployment
+  namespace: iot
+  labels:
+    app: iot-api-sensors
+    version: v1
+spec:
+  progressDeadlineSeconds: 300
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iot-api-sensors
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: iot-api-sensors
+        version: v1
+    spec:
+      containers:
+      - name: iot-api-sensors
+        image: registry.eu-de.bluemix.net/ht-iot/iot-api-sensors:${BUILD_TIMESTAMP}
+        ports:
+        - name: http
+          containerPort: 8080
+        resources:
+          limits:
+            cpu: "512m"
+            memory: "512Mi"
+        volumeMounts:
+          - name: amqps-ca-cert
+            mountPath: /app/server.cer.pem
+            subPath: server.cer.pem
+            readOnly: true
+        env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: ${SPRING_PROFILE}
+          - name: INFO_APP_VERSION
+            value: iot-api-sensors:${BUILD_TIMESTAMP}
+          - name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: iot-api-sensors
+                key: db2Warehouse.password
+          - name: RTMT_WATSONIOT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: iot-api-sensors
+                key: watsoniot.token
+          - name: SPRING_RABBITMQ_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: iot-api-sensors
+                key: rabbitmq.password
+        livenessProbe:
+          httpGet:
+            path: /api/actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          failureThreshold: 3
+          timeoutSeconds: 1
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          failureThreshold: 3
+          timeoutSeconds: 1
+          periodSeconds: 10
+      volumes:
+        - name: amqps-ca-cert
+          configMap:
+            name: amqps-ca-cert
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: iot-api-sensors
+  namespace: iot
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: iot-api-sensors-deployment
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: iot-api-sensors-service
+  namespace: iot
+spec:
+  selector:
+    app: iot-api-sensors
+    version: v1
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: http
+  type: ClusterIP
